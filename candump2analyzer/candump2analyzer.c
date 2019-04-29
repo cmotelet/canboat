@@ -44,6 +44,7 @@ along with CANboat.  If not, see <http://www.gnu.org/licenses/>.
 #define FMT_2 2 // Debian ex:	"   can0  09F8027F   [8]  00 FC FF FF 00 00 FF FF"
 #define FMT_3 3 // candump log ex:	"(1502979132.106111) slcan0 09F50374#000A00FFFF00FFFF"
 #define FMT_4 4 // tshark of pcap:10131  29.555750              ?              CAN 16 XTD: 0x09fd0223   00 49 02 1c a7 fa ff ff
+#define FMT_5 5 // candump -t a can0 ex: " (1556563652.149223)  can0  09F503A0   [8]  FF FF FF 49 01 FF FF FF"
 
 void gettimeval(struct timeval *tv, double sec)
 {
@@ -110,6 +111,8 @@ int main(int argc, char **argv)
       }
       else if (strstr(msg, "CAN 16 XTD:") != NULL)
         format = FMT_4;
+      else if (sscanf(msg, " (%lf)  %*s  %8x   [%d]", &currentTime, &canid, &size) == 3)
+        format = FMT_5;
       else
         continue;
     }
@@ -134,6 +137,11 @@ int main(int argc, char **argv)
       if (sscanf(msg, "%*d %lf %*s CAN %d XTD: 0x%8x   ", &currentTime, &size, &canid) != 3)
         continue;
       size = size - 8;
+    }
+    else if (format == FMT_5)
+    {
+      if (sscanf(msg, " (%lf)  %*s  %8x   [%d]", &currentTime, &canid, &size) != 3)
+        continue;
     }
 
     unsigned int pri;
